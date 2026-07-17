@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakehouse Analytics — Telkom Akses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+
+<!-- ============================================================ ICON SPRITE ============================================================ -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+  <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="icon-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5-5"/><path d="M9 15l7-11 4 3-8 10z"/><path d="M14 8l3 3"/><path d="M4 20h5v-3H6z"/></symbol>
+  <symbol id="icon-merge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4V18M6 8.4C6 13 10 15.6 15.6 15.6"/></symbol>
+  <symbol id="icon-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9"/></symbol>
+  <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M12 16l-4-4M12 16l4-4"/><path d="M4 18v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15 14.2c2.6 .3 4.5 2.5 4.5 5.8"/></symbol>
+  <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 7 12 9.5 5 14 19 16.5 12 22 12"/></symbol>
+  <symbol id="icon-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="icon-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M5.5 5h13l2.5 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/></symbol>
+  <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><polyline points="13 3 13 9 19 9"/></symbol>
+  <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></symbol>
+</svg>
+
+<div class="app-shell">
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="sidebar" id="sidebar" aria-label="Primary">
+    <div class="sidebar-brand">
+      <div class="mark">TA</div>
+      <div class="brand-text"><strong>Lakehouse Analytics</strong><span>Telkom Akses</span></div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><svg><use href="#icon-sun"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="icon-btn hamburger-btn" id="hamburger-btn" aria-label="Open menu"><svg><use href="#icon-menu"/></svg></button>
+
+      <div class="topbar-title">
+        <h1 id="page-title">Dashboard</h1>
+        <p id="page-subtitle">Overview of your data platform</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="conn-pill" id="conn-pill" aria-haspopup="true" aria-expanded="false">
+          <span class="conn-dot"></span><span id="conn-label">Not connected</span>
+        </button>
+
+        <div class="settings-panel card" id="settings-panel" hidden>
+          <h4>Connect to MinIO</h4>
+          <p class="hint">Same instance as v1/v2 — just point this at wherever MinIO is reachable from your browser.</p>
+          <div class="field"><label for="cfg-endpoint">Endpoint URL</label><input class="input" id="cfg-endpoint" placeholder="http://localhost:9000"></div>
+          <div class="field"><label for="cfg-bucket">Bucket</label><input class="input" id="cfg-bucket" placeholder="datalake"></div>
+          <div class="field"><label for="cfg-access">Access key</label><input class="input" id="cfg-access" placeholder="admin"></div>
+          <div class="field" style="margin-bottom:12px"><label for="cfg-secret">Secret key</label><input class="input" id="cfg-secret" type="password" placeholder="password123"></div>
+          <button class="btn btn-primary btn-block" id="cfg-connect">Connect</button>
+        </div>
+
+        <button class="user-menu" id="user-menu" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar" id="avatar-initials">A</span>
+          <span class="user-role" id="user-role-label">Administrator</span>
+          <svg style="width:13px;height:13px;color:var(--muted-foreground)"><use href="#icon-chevron-down"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content" id="page-content">
+
+      <!-- ======================================================== DASHBOARD ======================================================== -->
+      <section class="page" id="page-dashboard" data-title="Dashboard" data-subtitle="Overview of your data platform">
+        <div id="conn-banner-area"></div>
+
+        <div class="control-panel">
+          <button class="btn btn-primary btn-block btn-lg" data-nav="upload"><svg><use href="#icon-upload"/></svg> Upload Dataset</button>
+          <div class="control-panel-secondary">
+            <button class="btn btn-secondary" data-nav="prepare"><svg><use href="#icon-broom"/></svg> Prepare Data</button>
+            <button class="btn btn-secondary" data-nav="merge"><svg><use href="#icon-merge"/></svg> Merge</button>
+            <button class="btn btn-secondary" data-nav="visualize"><svg><use href="#icon-bar-chart"/></svg> Visualize</button>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="stat-grid"></div>
+        <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Storage by division</h3><p class="card-sub">Bronze layer usage across business units</p></div></div>
+            <div id="storage-by-division"></div>
+          </div>
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Recent activity</h3><p class="card-sub">Latest changes in the data lake</p></div></div>
+            <div class="activity-list" id="activity-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== DATASETS ======================================================== -->
+      <section class="page" id="page-datasets" data-title="Datasets" data-subtitle="Every dataset in the lakehouse, across all layers" hidden>
+        <div class="toolbar">
+          <div class="search-field"><svg><use href="#icon-search"/></svg><input class="input" id="dataset-search" placeholder="Search datasets or divisions…"></div>
+          <select class="select" id="filter-layer"><option value="">All layers</option><option value="Bronze">Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option></select>
+          <select class="select" id="filter-division"><option value="">All divisions</option></select>
+          <button class="btn btn-secondary btn-sm" id="datasets-refresh">Refresh</button>
+        </div>
+        <div class="dataset-grid" id="dataset-grid"></div>
+      </section>
+
+      <!-- ======================================================== UPLOAD ======================================================== -->
+      <section class="page" id="page-upload" data-title="Upload" data-subtitle="Add a new operational dataset" hidden>
+        <div class="card card-pad" style="max-width:640px;">
+          <div class="form-row">
+            <div class="field"><label for="upload-division">Division</label><select class="select" id="upload-division"><option value="">Select division…</option></select></div>
+            <div class="field"><label for="upload-type">Dataset type</label><select class="select" id="upload-type" disabled><option value="">Select division first…</option></select></div>
+          </div>
+          <div class="field">
+            <label>File</label>
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose a CSV file to upload">
+              <svg><use href="#icon-upload"/></svg>
+              <div class="dz-title">Drag and drop a CSV file here</div>
+              <div class="dz-sub">or click to browse — .csv up to 50MB</div>
+            </div>
+            <input type="file" id="file-input" accept=".csv" class="visually-hidden">
+            <div id="file-chip-area"></div>
+          </div>
+          <div id="validation-area"></div>
+          <button class="btn btn-primary btn-block" id="upload-submit" style="margin-top:16px;" disabled><svg><use href="#icon-upload"/></svg> Upload dataset</button>
+        </div>
+      </section>
+
+      <!-- ======================================================== PREPARE ======================================================== -->
+      <section class="page" id="page-prepare" data-title="Prepare" data-subtitle="Clean a dataset before it moves to the next layer" hidden>
+        <div class="field" style="max-width:420px;"><label for="prepare-dataset">Dataset</label><select class="select" id="prepare-dataset"></select></div>
+        <div class="prepare-layout">
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Preview</h3><p class="card-sub" id="prepare-preview-sub">First rows of the selected dataset</p></div></div>
+            <div class="preview-table-wrap"><table class="preview-table" id="prepare-preview-table"></table></div>
+          </div>
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Cleaning operations</h3><p class="card-sub">Choose what to fix</p></div></div>
+            <div id="op-list"></div>
+            <button class="btn btn-primary btn-block" id="prepare-accept" style="margin-top:12px;" disabled>Accept &amp; Save (<span id="op-count">0</span>)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== MERGE ======================================================== -->
+      <section class="page" id="page-merge" data-title="Merge" data-subtitle="Combine two datasets into one" hidden>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label for="merge-a">Dataset A</label><select class="select" id="merge-a"></select></div>
+            <div class="field"><label for="merge-b">Dataset B</label><select class="select" id="merge-b"></select></div>
+          </div>
+          <div class="field">
+            <label>Join type</label>
+            <div class="join-type-group" id="join-type-group">
+              <button class="join-type-option" data-join="inner" aria-pressed="true">Inner</button>
+              <button class="join-type-option" data-join="left" aria-pressed="false">Left</button>
+              <button class="join-type-option" data-join="right" aria-pressed="false">Right</button>
+              <button class="join-type-option" data-join="outer" aria-pressed="false">Outer</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="merge-preview-btn">Preview merge</button>
+        </div>
+        <div class="card card-pad">
+          <div class="card-header"><div><h3>Result preview</h3><p class="card-sub" id="merge-result-sub">Pick two datasets and preview the merge</p></div></div>
+          <div class="preview-table-wrap"><table class="preview-table" id="merge-preview-table"></table></div>
+        </div>
+      </section>
+
+      <!-- ======================================================== VISUALIZE ======================================================== -->
+      <section class="page" id="page-visualize" data-title="Visualize" data-subtitle="Build a quick chart from any dataset" hidden>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label for="viz-dataset">Data source</label><select class="select" id="viz-dataset"></select></div>
+            <div class="field"><label for="viz-chart-type">Chart type</label><select class="select" id="viz-chart-type"><option value="bar">Bar chart</option><option value="line">Line chart</option><option value="pie">Pie chart</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="viz-x">Category column</label><select class="select" id="viz-x"></select></div>
+            <div class="field"><label for="viz-y">Value column</label><select class="select" id="viz-y"></select></div>
+          </div>
+          <button class="btn btn-primary" id="viz-render-btn">Render chart</button>
+        </div>
+        <div class="card card-pad"><div class="chart-wrap"><canvas id="viz-canvas"></canvas></div></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast-region" id="toast-region"></div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1692.0/aws-sdk.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.5.4/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
