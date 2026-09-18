@@ -1,0 +1,100 @@
+version: "3.9"
+
+x-app-common: &app-common
+  build: .
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    PG_HOST: postgres
+    PG_PORT: "5432"
+    MINIO_ENDPOINT: http://minio:9000
+  depends_on:
+    postgres:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+    seed:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB:-lakehouse}
+      POSTGRES_USER: ${PG_USER:-lakehouse}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-lakehouse}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-lakehouse} -d ${PG_DB:-lakehouse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-password123}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  seed:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_DB: ${PG_DB:-lakehouse}
+      PG_USER: ${PG_USER:-lakehouse}
+      PG_PASSWORD: ${PG_PASSWORD:-lakehouse}
+      SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:-admin}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-changeme123}
+      SEED_ADMIN_FULL_NAME: ${SEED_ADMIN_FULL_NAME:-Workspace Admin}
+    command: ["python", "db/seed.py"]
+
+  app1:
+    <<: *app-common
+    container_name: lakehouse-app1
+
+  app2:
+    <<: *app-common
+    container_name: lakehouse-app2
+
+  app3:
+    <<: *app-common
+    container_name: lakehouse-app3
+
+  nginx:
+    image: nginx:alpine
+    container_name: lakehouse-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app1
+      - app2
+      - app3
+
+volumes:
+  pg_data:
+  minio_data:

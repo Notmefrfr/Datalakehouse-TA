@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lakehouse Analytics — Telkom Akses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+
+<!-- ============================================================ ICON SPRITE ============================================================ -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+  <symbol id="icon-maximize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+  <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="icon-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+  <symbol id="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="icon-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5-5"/><path d="M9 15l7-11 4 3-8 10z"/><path d="M14 8l3 3"/><path d="M4 20h5v-3H6z"/></symbol>
+  <symbol id="icon-merge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4V18M6 8.4C6 13 10 15.6 15.6 15.6"/></symbol>
+  <symbol id="icon-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="18" y1="20" x2="18" y2="15"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></symbol>
+  <symbol id="icon-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="8 12.5 11 15.5 16 9"/></symbol>
+  <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M12 16l-4-4M12 16l4-4"/><path d="M4 18v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="icon-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15 14.2c2.6 .3 4.5 2.5 4.5 5.8"/></symbol>
+  <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 7 12 9.5 5 14 19 16.5 12 22 12"/></symbol>
+  <symbol id="icon-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="icon-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M5.5 5h13l2.5 7v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7z"/></symbol>
+  <symbol id="icon-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/><polyline points="13 3 13 9 19 9"/></symbol>
+  <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><line x1="12" y1="10" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.64 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.64a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.36 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></symbol>
+  <symbol id="icon-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.05V17h6v-.25c0-.85.4-1.55 1-2.05A7 7 0 0 0 12 2z"/></symbol>
+</svg>
+
+<!-- ======================================================== LOGIN OVERLAY ======================================================== -->
+<div class="login-overlay" id="login-overlay" hidden>
+  <div class="card login-card">
+    <div class="login-brand">
+      <div class="mark">TA</div>
+      <div><strong>Lakehouse Analytics</strong><span>Telkom Akses</span></div>
+    </div>
+    <div class="field"><label for="login-username">Username</label><input class="input" id="login-username" autocomplete="username"></div>
+    <div class="field" style="margin-bottom:4px"><label for="login-password">Password</label><input class="input" id="login-password" type="password" autocomplete="current-password"></div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn btn-primary btn-block" id="login-submit" style="margin-top:12px;">Sign in</button>
+    <p class="login-hint">Accounts are provisioned by an administrator via <code>db/seed.py</code>.</p>
+  </div>
+</div>
+
+<div class="app-shell" id="app-shell" hidden>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="sidebar" id="sidebar" aria-label="Primary">
+    <div class="sidebar-brand">
+      <div class="mark">TA</div>
+      <div class="brand-text"><strong>Lakehouse Analytics</strong><span>Telkom Akses</span></div>
+    </div>
+    <nav class="sidebar-nav" id="sidebar-nav"></nav>
+    <div class="sidebar-footer">
+      <button class="icon-btn" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode"><svg><use href="#icon-sun"/></svg></button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="icon-btn hamburger-btn" id="hamburger-btn" aria-label="Open menu"><svg><use href="#icon-menu"/></svg></button>
+
+      <div class="topbar-title">
+        <h1 id="page-title">Dashboard</h1>
+        <p id="page-subtitle">Overview of your data platform</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="conn-pill" id="conn-pill" title="Backend connection status">
+          <span class="conn-dot"></span><span id="conn-label">Checking…</span>
+        </button>
+
+        <button class="user-menu" id="user-menu" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar" id="avatar-initials">•</span>
+          <span class="user-role" id="user-role-label">—</span>
+          <svg style="width:13px;height:13px;color:var(--muted-foreground)"><use href="#icon-chevron-down"/></svg>
+        </button>
+        <div class="settings-panel card" id="user-panel" hidden>
+          <h4 id="user-panel-name">—</h4>
+          <p class="hint" id="user-panel-role">—</p>
+          <button class="btn btn-secondary btn-block" id="logout-btn" style="margin-top:8px;">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content" id="page-content">
+
+      <!-- ======================================================== DASHBOARD ======================================================== -->
+      <section class="page" id="page-dashboard" data-title="Dashboard" data-subtitle="Overview of your data platform">
+        <div id="conn-banner-area"></div>
+
+        <div class="control-panel">
+          <button class="btn btn-primary btn-block btn-lg" data-nav="upload"><svg><use href="#icon-upload"/></svg> Upload Dataset</button>
+          <div class="control-panel-secondary">
+            <button class="btn btn-secondary" data-nav="prepare"><svg><use href="#icon-broom"/></svg> Preview Data</button>
+            <button class="btn btn-secondary" data-nav="merge" id="dashboard-merge-btn"><svg><use href="#icon-merge"/></svg> Merge</button>
+            <button class="btn btn-secondary" data-nav="visualize"><svg><use href="#icon-bar-chart"/></svg> Visualize</button>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="stat-grid"></div>
+        <div style="display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom:16px;">
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Storage by division</h3><p class="card-sub">Bronze layer usage across business units</p></div></div>
+            <div id="storage-by-division"></div>
+          </div>
+          <div class="card card-pad">
+            <div class="card-header"><div><h3>Recent activity</h3><p class="card-sub">Latest changes in the data lake</p></div></div>
+            <div class="activity-list" id="activity-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== DATASETS ======================================================== -->
+      <section class="page" id="page-datasets" data-title="Datasets" data-subtitle="Every dataset in the lakehouse, across all layers" hidden>
+        <div class="toolbar">
+          <div class="search-field"><svg><use href="#icon-search"/></svg><input class="input" id="dataset-search" placeholder="Search datasets or divisions…"></div>
+          <select class="select" id="filter-layer"><option value="">All layers</option><option value="Bronze">Bronze</option><option value="Silver">Silver</option><option value="Gold">Gold</option></select>
+          <select class="select" id="filter-division"><option value="">All divisions</option></select>
+          <button class="btn btn-secondary btn-sm" id="datasets-refresh">Refresh</button>
+        </div>
+        <div class="dataset-grid" id="dataset-grid"></div>
+      </section>
+
+      <!-- ======================================================== UPLOAD ======================================================== -->
+      <section class="page" id="page-upload" data-title="Upload" data-subtitle="Add a new operational dataset" hidden>
+        <div id="upload-summary-area"></div>
+        <div class="upload-layout" id="upload-layout">
+        <div class="card card-pad" id="upload-form-card">
+          <div class="form-row">
+            <div class="field"><label for="upload-division">Division</label><select class="select" id="upload-division"><option value="">Select division…</option></select></div>
+            <div class="field"><label for="upload-type">Dataset type</label><select class="select" id="upload-type" disabled><option value="">Select division first…</option></select></div>
+          </div>
+          <div class="field">
+            <label>File</label>
+            <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose a CSV file to upload">
+              <svg><use href="#icon-upload"/></svg>
+              <div class="dz-title">Drag and drop a CSV file here</div>
+              <div class="dz-sub">or click to browse — .csv up to 2GB</div>
+            </div>
+            <input type="file" id="file-input" accept=".csv" class="visually-hidden">
+            <div id="file-chip-area"></div>
+          </div>
+
+          <div id="validation-area"></div>
+
+          <div class="delimiter-override" id="delimiter-override-area" style="margin-top:10px;" hidden>
+            <p class="hint" id="delimiter-override-hint" style="margin-bottom:6px;">Not the right format? Tell us what this file actually uses:</p>
+            <div class="delim-choice-group" id="delimiter-override-group">
+              <button type="button" class="delim-choice-option" data-delim="comma" aria-pressed="false">Comma ( , )</button>
+              <button type="button" class="delim-choice-option" data-delim="semicolon" aria-pressed="false">Semicolon ( ; )</button>
+              <button type="button" class="delim-choice-option" data-delim="tab" aria-pressed="false">Tab</button>
+              <button type="button" class="delim-choice-option" data-delim="pipe" aria-pressed="false">Pipe ( | )</button>
+            </div>
+          </div>
+
+          <div id="format-info-area" style="margin-top:12px;"></div>
+
+          <div id="dedupe-section" style="margin-top:16px;" hidden>
+            <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:6px;">Duplicate handling</label>
+            <select class="select" id="dedupe-mode">
+              <option value="remove">Remove duplicate rows — skip new rows matching an existing record</option>
+              <option value="replace">Replace existing duplicate records — overwrite matches with the new data</option>
+              <option value="keep">Keep duplicate rows — append everything, even matches</option>
+              <option value="append_raw">Append everything exactly as uploaded — no checks at all</option>
+            </select>
+            <div id="key-column-section" style="margin-top:10px;">
+              <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:4px;">Duplicate key</label>
+              <p class="hint" style="margin-bottom:8px;">Which column(s) identify "the same record"?</p>
+              <div class="key-column-picker" id="key-column-picker"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" id="upload-submit" style="margin-top:16px;" disabled><svg><use href="#icon-upload"/></svg> Upload dataset</button>
+        </div>
+
+        <aside class="tutorial-panel card card-pad" aria-label="Upload guide">
+          <div class="tutorial-panel-header">
+            <span class="tutorial-icon"><svg><use href="#icon-lightbulb"/></svg></span>
+            <h3>How uploading works</h3>
+          </div>
+          <ol class="tutorial-steps">
+            <li><strong>Pick a division and dataset type.</strong> These are your company's standardized formats — each one has a fixed set of required columns.</li>
+            <li><strong>Your file's delimiter is detected automatically.</strong> Comma, semicolon, tab, or pipe-separated — the system figures it out and stores it as comma-separated, no need to tell it which one you used.</li>
+            <li><strong>Same format again?</strong> It won't create a new dataset — your file merges straight into the one growing dataset for that format.</li>
+            <li><strong>Decide how duplicates are handled.</strong> "Remove" skips repeats, "Replace" updates them with your new values, "Keep"/"Append" just adds everything.</li>
+            <li><strong>Other Format</strong> skips all of this — it's stored on its own, useful for one-off files that don't match a standard layout.</li>
+          </ol>
+          <div class="tutorial-divider"></div>
+          <p class="tutorial-note">Not sure what a required column means? Check the <strong>"About this format"</strong> panel that appears once you pick a dataset type — it shows the current master dataset's size and recent uploads.</p>
+        </aside>
+        </div>
+      </section>
+
+      <!-- ======================================================== PREPARE ======================================================== -->
+      <section class="page" id="page-prepare" data-title="Preview" data-subtitle="Preview your automatically-cleaned dataset" hidden>
+        <div class="field" style="max-width:420px;"><label for="prepare-dataset">Dataset</label><select class="select" id="prepare-dataset"></select></div>
+        <div class="card card-pad">
+          <div class="card-header"><div><h3>Preview</h3><p class="card-sub" id="prepare-preview-sub">First rows of the selected dataset</p></div></div>
+          <div class="preview-table-wrap"><table class="preview-table" id="prepare-preview-table"></table></div>
+        </div>
+      </section>
+
+      <!-- ======================================================== MERGE ======================================================== -->
+      <section class="page" id="page-merge" data-title="Merge" data-subtitle="Combine two datasets into one" hidden>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label for="merge-a">Dataset A</label><select class="select" id="merge-a"></select></div>
+            <div class="field"><label for="merge-b">Dataset B</label><select class="select" id="merge-b"></select></div>
+          </div>
+          <div class="field">
+            <label>Join type</label>
+            <div class="join-type-group" id="join-type-group">
+              <button class="join-type-option" data-join="inner" aria-pressed="true">Inner</button>
+              <button class="join-type-option" data-join="left" aria-pressed="false">Left</button>
+              <button class="join-type-option" data-join="right" aria-pressed="false">Right</button>
+              <button class="join-type-option" data-join="outer" aria-pressed="false">Outer</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="merge-preview-btn">Preview merge</button>
+        </div>
+        <div class="card card-pad">
+          <div class="card-header"><div><h3>Result preview</h3><p class="card-sub" id="merge-result-sub">Pick two datasets and preview the merge</p></div><button class="btn btn-secondary btn-sm" id="merge-download-btn" hidden><svg style="width:14px;height:14px"><use href="#icon-download"/></svg>Download</button></div>
+          <div class="preview-table-wrap"><table class="preview-table" id="merge-preview-table"></table></div>
+        </div>
+      </section>
+
+      <!-- ======================================================== VISUALIZE ======================================================== -->
+      <section class="page" id="page-visualize" data-title="Visualize" data-subtitle="Build a quick chart from any dataset" hidden>
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div class="form-row">
+            <div class="field"><label for="viz-dataset">Data source</label><select class="select" id="viz-dataset"></select></div>
+            <div class="field"><label for="viz-chart-type">Chart type</label><select class="select" id="viz-chart-type"><option value="bar">Bar chart</option><option value="line">Line chart</option><option value="pie">Pie chart</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="viz-x" id="viz-x-label">Category column</label><select class="select" id="viz-x"></select></div>
+            <div class="field" id="viz-y-field"><label for="viz-y" id="viz-y-label">Value column</label><select class="select" id="viz-y"></select></div>
+            <div class="field"><label for="viz-method">Calculation</label>
+              <select class="select" id="viz-method">
+                <option value="count">Count</option>
+                <option value="sum">Sum</option>
+                <option value="avg">Average</option>
+                <option value="median">Median</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="viz-render-btn">Render chart</button>
+          <p class="hint" id="viz-compat-msg" style="color:var(--destructive);margin-top:8px;" hidden></p>
+        </div>
+        <div class="card card-pad" id="viz-chart-card"><div class="chart-wrap"><canvas id="viz-canvas"></canvas></div></div>
+
+        <div class="card card-pad" style="margin-top:16px;">
+          <div class="card-header"><div><h3>Summary</h3><p class="card-sub">Uses the dataset selected above</p></div></div>
+          <div class="form-row">
+            <div class="field"><label for="summary-division">Select section to summarize</label>
+              <select class="select" id="summary-division" disabled>
+                <option value="">Choose a dataset above…</option>
+              </select>
+            </div>
+            <div class="field"><label for="summary-chart-type">Chart type</label>
+              <select class="select" id="summary-chart-type">
+                <option value="bar">Bar chart</option>
+                <option value="pie">Pie chart</option>
+                <option value="line">Line chart</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="summary-render-btn">Generate summary</button>
+          <div id="summary-kpis" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:14px;"></div>
+          <div style="display:flex; gap:16px; align-items:flex-start; margin-top:14px; flex-wrap:wrap;">
+            <div id="summary-area" style="flex:1; min-width:280px;"></div>
+            <div style="flex:1; min-width:280px;">
+              <div id="summary-charts-area" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:14px;"></div>
+              <p class="hint" id="summary-chart-msg" style="color:var(--destructive);margin-top:8px;" hidden></p>
+            </div>
+          </div>
+
+          <details id="daily-section" style="margin-top:16px;" hidden>
+            <summary style="cursor:pointer;font-weight:600;padding:8px 0;">Daily Summary &amp; Preview (optional)</summary>
+            <div style="padding-top:10px;">
+              <div class="form-row">
+                <div class="field" id="daily-date-column-field"><label for="daily-date-column">Date column</label><select class="select" id="daily-date-column"></select></div>
+                <div class="field"><label for="daily-date-input">Date</label><input class="input" type="date" id="daily-date-input"></div>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="daily-render-btn">Show</button>
+              <div id="daily-summary-area" style="margin-top:14px;"></div>
+              <div id="daily-preview-area" style="margin-top:14px;"></div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast-region" id="toast-region"></div>
+
+<div id="chart-maximize-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,15,20,0.6);z-index:1000;align-items:center;justify-content:center;padding:32px;">
+  <div class="card card-pad" style="width:100%;max-width:1000px;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <h3 id="chart-maximize-title" style="margin:0;"></h3>
+      <button class="icon-btn btn-sm" id="chart-maximize-close" aria-label="Close" title="Close"><svg style="width:16px;height:16px"><use href="#icon-x-circle"/></svg></button>
+    </div>
+    <div class="chart-wrap" style="flex:1;min-height:400px;"><canvas id="chart-maximize-canvas"></canvas></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script src="/static/js/script.js"></script>
+</body>
+</html>
