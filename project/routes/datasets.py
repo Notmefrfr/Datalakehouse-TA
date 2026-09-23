@@ -3,7 +3,7 @@ import io
 
 from flask import Blueprint, Response, jsonify, request
 
-from routes._common import admin_required, catalog, config, login_required, minio, postgres, spark
+from routes._common import admin_required, catalog, config, login_required, postgres, spark
 
 bp = Blueprint("datasets", __name__)
 
@@ -147,19 +147,19 @@ def archive_dataset(user, layer, name):
 @bp.post("/datasets/<layer>/<name>/delete")
 @admin_required
 def delete_dataset(user, layer, name):
-    """Permanently deletes the underlying object — unlike archive (which
-    just hides it from the library), this actually removes the data and
-    cannot be undone. Since CatalogService.list_catalog() builds the
-    dataset list by scanning MinIO directly, removing the object here is
-    what makes it fully disappear from every dataset dropdown/list too —
-    no separate Postgres row needs cleaning up for that to take effect."""
-    key = catalog().object_key_for(layer, name)
-    if not key:
-        return jsonify({"error": f"Unknown dataset '{name}' in layer '{layer}'"}), 404
+    """Permanently deletes the underlying data — unlike archive (which just
+    hides it from the library), this actually removes it and cannot be
+    undone. Removes the storage (a single object for Bronze/Silver/Gold, a
+    whole Delta table for Master — see CatalogService.delete_dataset_storage)
+    and the Postgres metadata row, so it fully disappears from every
+    dataset dropdown/list too."""
     try:
-        minio().delete_object(key)
+        catalog().delete_dataset_storage(layer, name)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    postgres().delete_metadata(layer, name)
     postgres().log_action(user["id"], user["username"], "delete_dataset", f"{layer}::{name}")
     return jsonify({"ok": True})
 

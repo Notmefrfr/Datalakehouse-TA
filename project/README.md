@@ -171,6 +171,8 @@ volume di `docker-compose.yml`. Jadi:
 │   ├── spark_service.py                   # pembersihan/merge/agregasi
 │   ├── catalog_service.py                  # gabungan MinIO + metadata Postgres
 │   └── rate_limiter.py                      # pembatas percobaan login
+│   ├── delta_service.py                     # tabel Delta Lake untuk Master 
+│   └── compaction_job.py                     # job background: kompaksi file kecil 
 ├── templates/index.html                    # single-page shell
 └── static/
     ├── js/script.js                          # seluruh logika frontend
@@ -202,3 +204,27 @@ volume di `docker-compose.yml`. Jadi:
   tapi belum ada proses yang mengisinya.
 - Kartu "Active Jobs" di Dashboard masih selalu 0 — placeholder untuk fitur
   job monitor di masa depan.
+
+## 10. Master Dataset: Parquet + Delta Lake
+
+Dataset "Master" (yang otomatis di-merge tiap upload) sekarang disimpan
+sebagai tabel **Delta Lake** (Parquet + transaction log) di MinIO lewat
+`deltalake` (delta-rs) — bukan lagi satu file CSV raksasa yang ditulis
+ulang penuh tiap kali ada upload.
+
+- Tiap upload jadi satu file Parquet kecil sendiri (append biasa untuk
+  mode "keep"/"append_raw", atau Delta MERGE beneran untuk
+  "remove"/"replace").
+- Job background (`services/compaction_job.py`) mengecek tiap
+  `COMPACT_CHECK_INTERVAL_HOURS` jam, dan mengompres file-file kecil
+  suatu format jadi lebih sedikit & lebih besar (target
+  `COMPACT_TARGET_FILE_SIZE_MB`) kalau sudah lebih dari
+  `COMPACT_INTERVAL_DAYS` sejak kompaksi terakhir.
+- Data master lama (CSV, dari sebelum update ini) otomatis dipindahkan
+  ke tabel Delta yang baru, satu kali, pertama kali format itu disentuh
+  lagi — tidak perlu migrasi manual.
+- Download & halaman Visualize tidak berubah sama sekali dari sisi
+  pengguna: keduanya tetap melihat satu dataset gabungan per kategori,
+  walau di baliknya sudah terpecah jadi banyak file Parquet.
+- Belum ada tombol "compact sekarang" di UI admin — kompaksi hanya
+  berjalan via job terjadwal di atas.

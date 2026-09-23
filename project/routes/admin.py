@@ -5,7 +5,7 @@ Every modification here is recorded in Postgres (audit_log), per the spec that
 """
 from flask import Blueprint, jsonify, request
 
-from routes._common import admin_required, catalog, minio, postgres, spark
+from routes._common import admin_required, catalog, postgres
 
 bp = Blueprint("admin", __name__)
 
@@ -20,16 +20,13 @@ def update_row(user):
         return jsonify({"error": "layer, name, row_index and updates are required."}), 400
 
     try:
-        csv_text = catalog().read_dataset_csv(layer, name)
-        df = spark().read_csv_text(csv_text)
+        df = catalog().read_dataset_df(layer, name)
         if row_index < 0 or row_index >= len(df):
             return jsonify({"error": "row_index out of range."}), 400
         for col, value in updates.items():
             if col in df.columns:
                 df.at[row_index, col] = value
-        new_csv = spark().to_csv_text(df)
-        key = catalog().object_key_for(layer, name)
-        minio().put_object_text(key, new_csv, content_type="text/csv")
+        catalog().write_dataset_df(layer, name, df)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -46,14 +43,11 @@ def delete_row(user):
         return jsonify({"error": "layer, name and row_index are required."}), 400
 
     try:
-        csv_text = catalog().read_dataset_csv(layer, name)
-        df = spark().read_csv_text(csv_text)
+        df = catalog().read_dataset_df(layer, name)
         if row_index < 0 or row_index >= len(df):
             return jsonify({"error": "row_index out of range."}), 400
         df = df.drop(df.index[row_index]).reset_index(drop=True)
-        new_csv = spark().to_csv_text(df)
-        key = catalog().object_key_for(layer, name)
-        minio().put_object_text(key, new_csv, content_type="text/csv")
+        catalog().write_dataset_df(layer, name, df)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
@@ -70,11 +64,10 @@ def delete_dataset(user):
         return jsonify({"error": "layer and name are required."}), 400
 
     try:
-        key = catalog().object_key_for(layer, name)
-        if not key:
-            return jsonify({"error": "Unknown dataset."}), 404
-        minio().delete_object(key)
+        catalog().delete_dataset_storage(layer, name)
         postgres().delete_metadata(layer, name)
+    except ValueError:
+        return jsonify({"error": "Unknown dataset."}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 

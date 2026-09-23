@@ -16,6 +16,10 @@ def spark():
     return current_app.extensions["spark"]
 
 
+def delta():
+    return current_app.extensions["delta"]
+
+
 def catalog():
     return current_app.extensions["catalog"]
 

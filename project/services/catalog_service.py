@@ -1,11 +1,21 @@
 """
 Catalog service: everything about *which datasets exist, where, and what
-they're named* — combining raw MinIO object listings with Postgres metadata.
+they're named* — combining raw MinIO/Delta storage with Postgres metadata.
 This used to run in the browser against MinIO directly; it now runs here.
+
+Every dataset, regardless of how it's actually stored underneath (a single
+Parquet object for Bronze, a single CSV object for Silver/Gold, or a whole
+Delta table split across many Parquet files for Master), is read through
+read_dataset_df()/read_dataset_csv() and looks like one plain table to
+every caller — that's what lets Visualize/Prepare/download/etc. stay
+completely unaware that Master datasets are internally split into parts.
 """
+import io
 import re
 import time
 from datetime import datetime, timezone
+
+import pandas as pd
 
 
 def sanitize_name(raw):
@@ -14,30 +24,31 @@ def sanitize_name(raw):
 
 
 class CatalogService:
-    def __init__(self, config, minio, postgres):
+    def __init__(self, config, minio, postgres, delta):
         self.config = config
         self.minio = minio
         self.postgres = postgres
+        self.delta = delta
 
     # -- object key helpers ---------------------------------------------------
 
     def bronze_key(self, division, dtype, stub):
-        return f"{self.config.BRONZE_PREFIX}{division}/{dtype}/{stub}.csv"
+        return f"{self.config.BRONZE_PREFIX}{division}/{dtype}/{stub}.parquet"
 
     @staticmethod
     def format_key(division, dtype):
         """The one stable identifier for a predefined format's master dataset —
-        same division+dtype always resolves to the same master file."""
+        same division+dtype always resolves to the same master Delta table."""
         return f"{division}__{dtype}"
-
-    def master_key(self, format_key):
-        return f"{self.config.MASTER_PREFIX}{format_key}/data.csv"
 
     def parse_bronze_name(self, name):
         parts = name.split("__")
         return parts if len(parts) == 3 else None
 
     def object_key_for(self, layer, name):
+        """A single-object storage key for this dataset, or None if it isn't
+        stored as a single object (Master datasets are a whole Delta table
+        — see delta.table_uri() / drop_table() instead)."""
         if layer == "Bronze":
             parsed = self.parse_bronze_name(name)
             if not parsed:
@@ -48,8 +59,6 @@ class CatalogService:
             return f"{self.config.SILVER_PREFIX}{name}/data.csv"
         if layer == "Gold":
             return f"{self.config.GOLD_PREFIX}{name}/data.csv"
-        if layer == "Master":
-            return self.master_key(name)
         return None
 
     def new_stub(self, original_filename):
@@ -58,11 +67,57 @@ class CatalogService:
 
     # -- read / write ------------------------------------------------------------
 
-    def read_dataset_csv(self, layer, name):
+    def read_dataset_df(self, layer, name):
+        """The one place that knows how to actually fetch a dataset's data,
+        as a DataFrame, regardless of layer/backing format."""
+        if layer == "Master":
+            self.delta.ensure_table(name)
+            df = self.delta.read_df(name)
+            if df is None:
+                raise ValueError(f"Unknown dataset '{name}' in layer 'Master'")
+            return df
+        if layer == "Bronze":
+            key = self.object_key_for(layer, name)
+            if not key:
+                raise ValueError(f"Unknown dataset '{name}' in layer '{layer}'")
+            return self.minio.get_object_parquet(key)
         key = self.object_key_for(layer, name)
         if not key:
             raise ValueError(f"Unknown dataset '{name}' in layer '{layer}'")
-        return self.minio.get_object_text(key)
+        text = self.minio.get_object_text(key)
+        return pd.read_csv(io.StringIO(text))
+
+    def read_dataset_csv(self, layer, name):
+        df = self.read_dataset_df(layer, name)
+        return df.to_csv(index=False)
+
+    def write_dataset_df(self, layer, name, df):
+        """Persists a full-dataset replacement — used by admin row
+        edit/delete (routes/admin.py). For Master this is a Delta
+        overwrite (infrequent, unlike the per-upload append/merge path
+        normal uploads take)."""
+        if layer == "Master":
+            self.delta.overwrite(name, df)
+            return
+        key = self.object_key_for(layer, name)
+        if not key:
+            raise ValueError(f"Unknown dataset '{name}' in layer '{layer}'")
+        if layer == "Bronze":
+            self.minio.put_object_parquet(key, df)
+        else:
+            self.minio.put_object_text(key, df.to_csv(index=False), content_type="text/csv")
+
+    def delete_dataset_storage(self, layer, name):
+        """Deletes the underlying data for a dataset — a whole Delta table
+        for Master, a single object for everything else."""
+        if layer == "Master":
+            self.delta.drop_table(name)
+            self.postgres.delete_compaction_state(name)
+            return
+        key = self.object_key_for(layer, name)
+        if not key:
+            raise ValueError(f"Unknown dataset '{name}' in layer '{layer}'")
+        self.minio.delete_object(key)
 
     def division_label(self, division_id):
         d = self.config.DIVISION_LOOKUP.get(division_id)
@@ -95,9 +150,9 @@ class CatalogService:
 
         for obj in self.minio.list_all_objects(self.config.BRONZE_PREFIX):
             key = obj["Key"]
-            if not key.endswith(".csv"):
+            if not key.endswith(".parquet"):
                 continue
-            rel = key[len(self.config.BRONZE_PREFIX):-len(".csv")]
+            rel = key[len(self.config.BRONZE_PREFIX):-len(".parquet")]
             pieces = rel.split("/")
             if len(pieces) != 3:
                 continue
@@ -107,7 +162,7 @@ class CatalogService:
                 "division_id": division, "last_modified": obj["LastModified"], "size_bytes": obj["Size"],
             })
 
-        for layer, prefix in (("Silver", self.config.SILVER_PREFIX), ("Gold", self.config.GOLD_PREFIX), ("Master", self.config.MASTER_PREFIX)):
+        for layer, prefix in (("Silver", self.config.SILVER_PREFIX), ("Gold", self.config.GOLD_PREFIX)):
             seen = set()
             for obj in self.minio.list_all_objects(prefix):
                 key = obj["Key"]
@@ -122,6 +177,15 @@ class CatalogService:
                     "last_modified": obj["LastModified"], "size_bytes": obj["Size"],
                 })
 
+        # Master datasets are whole Delta tables (many objects, no single
+        # "/data.csv" key to scan for) — Postgres' dataset_metadata is the
+        # source of truth for which ones exist instead.
+        for name, updated_at in self.postgres.list_metadata_names("Master"):
+            entries.append({
+                "layer": "Master", "name": name, "division_id": None,
+                "last_modified": updated_at, "size_bytes": self.delta.table_size_bytes(name),
+            })
+
         enriched = []
         for e in entries:
             meta = self.postgres.get_metadata(e["layer"], e["name"])
@@ -130,10 +194,8 @@ class CatalogService:
 
             rows, cols, status = 0, 0, "Error"
             try:
-                text = self.read_dataset_csv(e["layer"], e["name"])
-                lines = [l for l in text.splitlines() if l.strip()]
-                cols = len(lines[0].split(",")) if lines else 0
-                rows = max(len(lines) - 1, 0)
+                df = self.read_dataset_df(e["layer"], e["name"])
+                rows, cols = len(df), len(df.columns)
                 status = "Active" if rows > 0 else "Error"
             except Exception:
                 pass

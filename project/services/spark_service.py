@@ -74,8 +74,9 @@ class SparkETLService:
         other value untouched.
 
         Deliberately NOT applied inside to_csv_text() / anywhere data is
-        merely stored or round-tripped internally (clean, merge_into_master,
-        etc.) — only at the point a file is actually handed to someone to
+        merely stored or round-tripped internally (clean(), the Delta
+        upsert/append path in DeltaService, etc.) — only at the point a
+        file is actually handed to someone to
         download. Doing it everywhere would risk quoting values that are
         later read back and re-parsed as numbers/dates internally; doing it
         only at export time avoids that while still protecting the person
@@ -575,87 +576,9 @@ class SparkETLService:
 
         return {"kpis": kpis, "rows": rows}
 
-    # -- automatic merge (upload -> one continuously-growing master dataset) --
-
-    def merge_into_master(self, existing_csv_text, new_csv_text, dedupe_mode, key_columns, delimiter=","):
-        """
-        Appends/merges a freshly-uploaded batch into a format's existing master
-        dataset (or creates it, if existing_csv_text is None — first upload for
-        that format). This is THE automatic-merge logic: same format, uploaded
-        again, becomes rows in the SAME file instead of a new dataset.
-
-        dedupe_mode:
-          "remove"      — new rows matching an existing key are skipped
-          "replace"      — new rows matching an existing key overwrite it (upsert)
-          "keep"/"append_raw" — no dedup at all, straight concatenation
-
-        `delimiter` applies only to `new_csv_text` — the incoming upload.
-        `existing_csv_text` is always read as canonical comma-separated,
-        since to_csv_text() never writes anything else, regardless of what
-        delimiter the original upload that created the master used.
-
-        Returns (merged_csv_text, stats) where stats has rows_uploaded,
-        rows_added, duplicates_handled, total_rows — exactly the fields the
-        Upload Summary panel displays.
-
-        Note: unlike clean(), this always runs in pandas regardless of
-        SPARK_MODE. A real Spark DataFrame version (upsert via anti-join +
-        union) would be the natural next step if you're merging datasets too
-        large to hold in memory on the Flask host — the local/pandas path
-        here is what SPARK_MODE=local already uses everywhere else, so it's
-        consistent with today's default, just not yet cluster-accelerated.
-        """
-        new_df = self.read_csv_text(new_csv_text, delimiter=delimiter)
-        rows_uploaded = len(new_df)
-
-        if existing_csv_text is None:
-            merged = new_df
-            rows_added = rows_uploaded
-            duplicates_handled = 0
-        else:
-            existing_df = self.read_csv_text(existing_csv_text)
-            # Union of columns (existing ∪ new), existing columns first, so a
-            # slightly different-but-compatible upload doesn't lose data.
-            all_cols = list(existing_df.columns) + [c for c in new_df.columns if c not in existing_df.columns]
-            existing_df = existing_df.reindex(columns=all_cols)
-            new_df = new_df.reindex(columns=all_cols)
-
-            if dedupe_mode in ("remove", "replace") and key_columns:
-                missing_key_cols = [c for c in key_columns if c not in all_cols]
-                if missing_key_cols:
-                    raise ValueError(f"Duplicate key column(s) not found: {', '.join(missing_key_cols)}")
-
-                existing_keys = existing_df[key_columns].astype(str).agg("||".join, axis=1)
-
-                if dedupe_mode == "remove":
-                    new_keys = new_df[key_columns].astype(str).agg("||".join, axis=1)
-                    is_dup = new_keys.isin(set(existing_keys))
-                    duplicates_handled = int(is_dup.sum())
-                    to_append = new_df[~is_dup]
-                    merged = pd.concat([existing_df, to_append], ignore_index=True)
-                    rows_added = len(to_append)
-                else:  # replace (upsert)
-                    existing_df = existing_df.copy()
-                    existing_df["__key__"] = existing_keys
-                    new_df = new_df.copy()
-                    new_df["__key__"] = new_df[key_columns].astype(str).agg("||".join, axis=1)
-
-                    dup_mask = existing_df["__key__"].isin(set(new_df["__key__"]))
-                    duplicates_handled = int(dup_mask.sum())
-                    kept_existing = existing_df[~dup_mask].drop(columns="__key__")
-                    incoming = new_df.drop(columns="__key__")
-                    merged = pd.concat([kept_existing, incoming], ignore_index=True)
-                    rows_added = len(new_df) - duplicates_handled
-            else:
-                # "keep" / "append_raw": no dedup at all
-                merged = pd.concat([existing_df, new_df], ignore_index=True)
-                rows_added = rows_uploaded
-                duplicates_handled = 0
-
-        stats = {
-            "rows_uploaded": rows_uploaded,
-            "rows_added": rows_added,
-            "duplicates_handled": duplicates_handled,
-            "total_rows": len(merged),
-        }
-        return self.to_csv_text(merged), stats
+    # Automatic merge of an upload into its format's continuously-growing
+    # master dataset used to live here as merge_into_master(), rewriting the
+    # whole master CSV on every upload. That's now DeltaService.append() /
+    # DeltaService.upsert() (services/delta_service.py) — each upload lands
+    # as its own small Parquet file (a real Delta MERGE for the
+    # remove/replace dedupe modes) instead of a full rewrite.

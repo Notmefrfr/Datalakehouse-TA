@@ -61,5 +61,20 @@ CREATE TABLE IF NOT EXISTS reporting_metrics (
     PRIMARY KEY (dataset_name, metric_name)
 );
 
+-- Tracks when each Master format's Delta table was last small-file
+-- compacted (see services/compaction_job.py). One row per format_key;
+-- the background job compacts a format again once COMPACT_INTERVAL_DAYS
+-- has passed since last_compacted_at (or immediately, if there's no row
+-- yet for that format).
+CREATE TABLE IF NOT EXISTS delta_compaction_log (
+    format_key        TEXT PRIMARY KEY,
+    last_compacted_at TIMESTAMPTZ NOT NULL,
+    files_before      INTEGER,
+    files_after       INTEGER,
+    bytes_before      BIGINT,
+    bytes_after       BIGINT,
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_dataset_versions_layer_name ON dataset_versions (layer, name);

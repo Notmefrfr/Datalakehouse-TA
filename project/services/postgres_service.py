@@ -83,6 +83,31 @@ class PostgresService:
         finally:
             self._release(conn)
 
+    @contextmanager
+    def try_advisory_lock(self, key: str):
+        """Non-blocking sibling of advisory_lock() — used for the periodic
+        compaction check (services/compaction_job.py), which runs
+        independently in every app replica. Yields True/False for whether
+        the lock was actually acquired; a replica that loses the race just
+        skips this run instead of blocking, since another replica is
+        already compacting this exact format."""
+        lock_id = self._lock_id(key)
+        conn = self._conn()
+        acquired = False
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT pg_try_advisory_lock(%s)", (lock_id,))
+                acquired = cur.fetchone()[0]
+            try:
+                yield acquired
+            finally:
+                if acquired:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT pg_advisory_unlock(%s)", (lock_id,))
+                    conn.commit()
+        finally:
+            self._release(conn)
+
     # -- users -----------------------------------------------------------------
 
     def get_user_by_username(self, username):
@@ -139,7 +164,7 @@ class PostgresService:
         try:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT display_name, owner, division_override, archived "
+                    "SELECT display_name, owner, division_override, archived, updated_at "
                     "FROM dataset_metadata WHERE layer = %s AND name = %s",
                     (layer, name),
                 )
@@ -175,6 +200,19 @@ class PostgresService:
                         (layer, name, *fields.values()),
                     )
             conn.commit()
+        finally:
+            self._release(conn)
+
+    def list_metadata_names(self, layer):
+        """(name, updated_at) for every dataset_metadata row in this layer —
+        used as the source of truth for which Master datasets exist, since
+        a Master dataset is a whole Delta table (many MinIO objects), not
+        one object CatalogService can discover by listing a prefix."""
+        conn = self._conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT name, updated_at FROM dataset_metadata WHERE layer = %s", (layer,))
+                return cur.fetchall()
         finally:
             self._release(conn)
 
@@ -250,6 +288,48 @@ class PostgresService:
                     (layer, name, limit),
                 )
                 return [dict(r) for r in cur.fetchall()]
+        finally:
+            self._release(conn)
+
+    # -- Delta small-file compaction state (services/compaction_job.py) --------
+
+    def get_last_compacted(self, format_key):
+        conn = self._conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT last_compacted_at FROM delta_compaction_log WHERE format_key = %s",
+                    (format_key,),
+                )
+                row = cur.fetchone()
+                return row[0] if row else None
+        finally:
+            self._release(conn)
+
+    def record_compaction(self, format_key, files_before, files_after, bytes_before, bytes_after):
+        conn = self._conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO delta_compaction_log "
+                    "(format_key, last_compacted_at, files_before, files_after, bytes_before, bytes_after, updated_at) "
+                    "VALUES (%s, now(), %s, %s, %s, %s, now()) "
+                    "ON CONFLICT (format_key) DO UPDATE SET "
+                    "last_compacted_at = now(), files_before = EXCLUDED.files_before, "
+                    "files_after = EXCLUDED.files_after, bytes_before = EXCLUDED.bytes_before, "
+                    "bytes_after = EXCLUDED.bytes_after, updated_at = now()",
+                    (format_key, files_before, files_after, bytes_before, bytes_after),
+                )
+            conn.commit()
+        finally:
+            self._release(conn)
+
+    def delete_compaction_state(self, format_key):
+        conn = self._conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM delta_compaction_log WHERE format_key = %s", (format_key,))
+            conn.commit()
         finally:
             self._release(conn)
 

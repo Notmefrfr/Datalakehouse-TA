@@ -5,7 +5,7 @@ from contextlib import contextmanager, nullcontext
 
 from flask import Blueprint, current_app, jsonify, request
 
-from routes._common import catalog, config, login_required, minio, postgres, spark
+from routes._common import catalog, config, delta, login_required, minio, postgres, spark
 
 bp = Blueprint("upload", __name__)
 
@@ -296,13 +296,16 @@ def upload(user):
     # own standalone Bronze dataset, never merged. Still canonicalized to
     # comma on the way in, same as everything else, so every other page
     # (Prepare/Visualize/Merge) can keep assuming comma-separated storage.
+    # Stored as Parquet (not CSV) now — same one-file-per-upload shape,
+    # just a more compact columnar format on disk.
     if dtype_config.get("skip_merge"):
         canonical_text = text if delimiter == "," else spark().to_csv_text(spark().read_csv_text(text, delimiter=delimiter))
         stored_text = spark().clean(canonical_text, AUTO_CLEAN_OPERATIONS)
+        stored_df = spark().read_csv_text(stored_text)
 
         stub = catalog().new_stub(file.filename)
         key = catalog().bronze_key(division, dtype, stub)
-        minio().put_object_text(key, stored_text, content_type="text/csv")
+        minio().put_object_parquet(key, stored_df)
 
         name = f"{division}__{dtype}__{stub}"
         postgres().upsert_metadata(
@@ -311,8 +314,9 @@ def upload(user):
             owner=user["full_name"] or user["username"],
             archived=False,
         )
-        row_count = max(len([l for l in stored_text.splitlines() if l.strip()]) - 1, 0)
-        postgres().record_version("Bronze", name, row_count=row_count, size_bytes=len(stored_text.encode("utf-8")), created_by=user["id"])
+        row_count = len(stored_df)
+        size_bytes = len(stored_text.encode("utf-8"))  # storage on disk is smaller (Parquet); this is the equivalent CSV size, consistent with other size figures shown in the UI
+        postgres().record_version("Bronze", name, row_count=row_count, size_bytes=size_bytes, created_by=user["id"])
         postgres().log_action(user["id"], user["username"], "upload_dataset", name, {"division": division, "dataset_type": dtype, "detected_delimiter": delimiter})
         return jsonify({"ok": True, "layer": "Bronze", "name": name, "merged": False, "detected_delimiter": delimiter})
 
@@ -330,7 +334,6 @@ def upload(user):
         return jsonify({"error": "Pick at least one duplicate-key column."}), 400
 
     format_key = catalog().format_key(division, dtype)
-    master_key = catalog().master_key(format_key)
 
     # Clean the incoming batch BEFORE it's merged — same reasoning as the
     # skip_merge branch above. Deliberately only the new batch, not a
@@ -340,29 +343,44 @@ def upload(user):
     # having to reprocess everything on every single upload.
     canonical_text = text if delimiter == "," else spark().to_csv_text(spark().read_csv_text(text, delimiter=delimiter))
     cleaned_text = spark().clean(canonical_text, AUTO_CLEAN_OPERATIONS)
+    cleaned_df = spark().read_csv_text(cleaned_text)
 
     # Everything from here through the Postgres bookkeeping below is one
-    # read-merge-write sequence against the SAME master file. Without this
-    # lock, two people uploading to the same format at nearly the same time
-    # can both read the master at its pre-upload state, merge independently,
-    # and then whichever write lands last silently overwrites the other's
-    # rows — no error, no conflict, just missing data. The lock makes a
-    # second upload to this exact format_key wait for the first to fully
-    # finish (MinIO write + all three Postgres writes) before it even reads
-    # the master file, so it always merges against the true latest state.
-    # Uploads to a DIFFERENT format_key are untouched — they take a
-    # different lock id and run fully in parallel.
+    # sequence against the SAME format's Delta table. Without this lock,
+    # two people uploading to the same format at nearly the same time could
+    # both merge against the table's pre-upload state and race each other
+    # on the commit — the lock makes a second upload to this exact
+    # format_key wait for the first to fully finish (Delta commit + all
+    # Postgres writes) before it even opens the table, so it always merges
+    # against the true latest state. Uploads to a DIFFERENT format_key are
+    # untouched — they take a different lock id and run fully in parallel.
+    #
+    # Each upload lands as its own small Parquet file — an append for
+    # "keep"/"append_raw", or a real Delta MERGE upsert for
+    # "remove"/"replace" — never a full rewrite of the format's existing
+    # data. The small files a busy format accumulates from this are what
+    # services/compaction_job.py periodically rewrites into fewer, larger
+    # ones (see Config.COMPACT_TARGET_FILE_SIZE_MB / COMPACT_INTERVAL_DAYS).
     with _upload_lock(f"master_upload:{format_key}"):
-        existing_text = None
-        if minio().object_exists(master_key):
-            existing_text = minio().get_object_text(master_key)
+        delta().ensure_table(format_key)
 
         try:
-            merged_csv, stats = spark().merge_into_master(existing_text, cleaned_text, dedupe_mode, key_columns, delimiter=",")
+            if not delta().exists(format_key):
+                delta().overwrite(format_key, cleaned_df)
+                stats = {
+                    "rows_uploaded": len(cleaned_df), "rows_added": len(cleaned_df),
+                    "duplicates_handled": 0, "total_rows": len(cleaned_df),
+                }
+            elif dedupe_mode in ("keep", "append_raw"):
+                delta().append(format_key, cleaned_df)
+                stats = {
+                    "rows_uploaded": len(cleaned_df), "rows_added": len(cleaned_df),
+                    "duplicates_handled": 0, "total_rows": delta().count_rows(format_key),
+                }
+            else:
+                stats = delta().upsert(format_key, cleaned_df, key_columns, replace_matches=(dedupe_mode == "replace"))
         except ValueError as e:
             return jsonify({"error": str(e)}), 400
-
-        minio().put_object_text(master_key, merged_csv, content_type="text/csv")
 
         postgres().upsert_metadata(
             "Master", format_key,
@@ -374,7 +392,7 @@ def upload(user):
         postgres().record_version(
             "Master", format_key,
             row_count=stats["total_rows"],
-            size_bytes=len(merged_csv.encode("utf-8")),
+            size_bytes=delta().table_size_bytes(format_key),
             created_by=user["id"],
             details={
                 "dedupe_mode": dedupe_mode,

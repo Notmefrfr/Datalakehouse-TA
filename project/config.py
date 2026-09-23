@@ -53,7 +53,35 @@ class Config:
     # continuously-growing "Master" dataset here, instead of a new file per
     # upload. "Other Format" (skip_merge=True below) is the only type that
     # still gets a fresh Bronze file per upload.
+    # MASTER_PREFIX (legacy) held one single ever-growing CSV per format —
+    # kept here ONLY so DeltaService can migrate that old file into the new
+    # Delta table the first time it's touched (see DeltaService.ensure_table).
+    # New data never gets written here again.
     MASTER_PREFIX = "master_v3/"
+
+    # Master datasets now live as real Delta Lake tables (Parquet data files
+    # + a _delta_log transaction log) under this prefix, one table per
+    # format_key ("division__dtype"), instead of one giant CSV object. Every
+    # upload lands as its own small Parquet file (an append or a Delta MERGE
+    # upsert); COMPACT_JOB below periodically rewrites the small files a
+    # format has accumulated into fewer, larger ones.
+    MASTER_DELTA_PREFIX = "master_delta_v1/"
+
+    # Small-file compaction (see services/compaction_job.py). A background
+    # job checks, every COMPACT_CHECK_INTERVAL_HOURS, whether each format's
+    # Delta table was last compacted more than COMPACT_INTERVAL_DAYS ago; if
+    # so it rewrites its small files into ones sized up to roughly
+    # COMPACT_TARGET_FILE_SIZE_MB. Once a rewritten file reaches that size it
+    # naturally stops being a compaction target (compact() only touches
+    # files under the target size), so it settles into place as a sealed
+    # "history" file and new uploads simply accumulate as new small files
+    # after it — exactly the behavior asked for: one file roughly covers a
+    # multi-week span, then a fresh one starts.
+    COMPACT_TARGET_FILE_SIZE_MB = int(os.environ.get("COMPACT_TARGET_FILE_SIZE_MB", 200))
+    COMPACT_INTERVAL_DAYS = int(os.environ.get("COMPACT_INTERVAL_DAYS", 7))
+    COMPACT_CHECK_INTERVAL_HOURS = int(os.environ.get("COMPACT_CHECK_INTERVAL_HOURS", 6))
+    # No admin-facing "compact now" button yet (deliberately deferred — the
+    # weekly job is the only trigger today); see services/compaction_job.py.
 
     # Dataset catalog: divisions + required-column contracts per dataset type.
     # Lives on the server so the frontend never encodes business rules.

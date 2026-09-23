@@ -13,6 +13,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 from services.catalog_service import CatalogService
+from services.delta_service import DeltaService
 from services.minio_service import MinioService
 from services.postgres_service import PostgresService
 from services.rate_limiter import limiter
@@ -69,11 +70,13 @@ def create_app():
     minio_service = MinioService(Config)
     postgres_service = PostgresService(Config)
     spark_service = SparkETLService(Config)
-    catalog_service = CatalogService(Config, minio_service, postgres_service)
+    delta_service = DeltaService(Config, minio_service)
+    catalog_service = CatalogService(Config, minio_service, postgres_service, delta_service)
 
     app.extensions["minio"] = minio_service
     app.extensions["postgres"] = postgres_service
     app.extensions["spark"] = spark_service
+    app.extensions["delta"] = delta_service
     app.extensions["catalog"] = catalog_service
 
     limiter.init_app(app)
@@ -155,6 +158,19 @@ def create_app():
     @app.get("/")
     def index():
         return render_template("index.html")
+
+    # --- weekly Delta small-file compaction ---
+    # Guarded so it starts exactly once per process: the Werkzeug reloader
+    # (FLASK_DEBUG=1) forks a second process, and WERKZEUG_RUN_MAIN is only
+    # set in the real (reloaded) one. Under gunicorn (production) this runs
+    # once per worker, which is fine — services/compaction_job.py's own
+    # per-format try_advisory_lock() is what actually prevents two workers
+    # (or two of the three nginx-balanced app replicas) from compacting the
+    # same format's table at the same time; this scheduler just decides
+    # when each process *checks* whether anything is due.
+    if os.environ.get("WERKZEUG_RUN_MAIN") or not app.debug:
+        from services.compaction_job import start_compaction_scheduler
+        start_compaction_scheduler(app, catalog_service, postgres_service, delta_service)
 
     return app
 

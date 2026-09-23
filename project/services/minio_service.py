@@ -8,6 +8,7 @@ MinIO directly — everything goes through the methods below.
 import io
 
 import boto3
+import pandas as pd
 from botocore.client import Config as BotoConfig
 from botocore.exceptions import ClientError
 
@@ -77,8 +78,41 @@ class MinioService:
     def put_object_fileobj(self, key, fileobj, content_type="text/csv"):
         self._client.upload_fileobj(fileobj, self.bucket, key, ExtraArgs={"ContentType": content_type})
 
+    def put_object_parquet(self, key, df):
+        """Bronze uploads ('Other Format', skip_merge) land here instead of
+        put_object_text — same one-file-per-upload shape as before, just
+        stored as compressed columnar Parquet instead of CSV text. Master
+        datasets do NOT use this; they go through DeltaService instead,
+        since they need the Delta transaction log on top of plain Parquet."""
+        buffer = io.BytesIO()
+        df.to_parquet(buffer, engine="pyarrow", index=False)
+        buffer.seek(0)
+        self._client.put_object(
+            Bucket=self.bucket, Key=key,
+            Body=buffer.getvalue(), ContentType="application/octet-stream",
+        )
+
+    def get_object_parquet(self, key):
+        data = self.get_object_bytes(key)
+        return pd.read_parquet(io.BytesIO(data), engine="pyarrow")
+
     def delete_object(self, key):
         self._client.delete_object(Bucket=self.bucket, Key=key)
+
+    def delete_prefix(self, prefix):
+        """Deletes every object under `prefix` — used to drop a whole Delta
+        table (data files + _delta_log) in one call, since those aren't a
+        single object key the way a CSV/Parquet dataset is."""
+        objects = self.list_all_objects(prefix)
+        if not objects:
+            return
+        # delete_objects takes at most 1000 keys per call.
+        for i in range(0, len(objects), 1000):
+            batch = objects[i:i + 1000]
+            self._client.delete_objects(
+                Bucket=self.bucket,
+                Delete={"Objects": [{"Key": o["Key"]} for o in batch]},
+            )
 
     def object_exists(self, key):
         try:
